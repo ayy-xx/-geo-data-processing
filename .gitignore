@@ -1,0 +1,25 @@
+# Raw data (too large for git)
+*.tif
+*.tiff
+*.shp
+*.shx
+*.dbf
+*.prj
+*.cpg
+*.nc
+*.hdf
+*.h5
+*.grib
+*.grb
+*.las
+*.laz
+*.img
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,41 @@
+{
+  "skill_name": "geo-data-processing",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "我有一批MODIS NDVI的GeoTIFF数据（WGS84投影），需要和GDP栅格数据（Albers等面积投影）做叠加分析。请帮我检查两个数据集的CRS并统一投影。",
+      "expected_output": "Inspects both datasets for CRS, detects the mismatch, recommends reprojecting the NDVI to Albers equal-area, generates a reprojection script using rasterio, and reports the transformation parameters.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Calculate NDVI from NIR and Red bands, then run a Mann-Kendall trend test on the 11-year NDVI time series for each pixel.",
+      "expected_output": "Generates a pipeline: NDVI calculation from bands, pixel-wise Mann-Kendall test, output trend and p-value rasters, with significance masking.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "对这个矢量图层做热点分析（Getis-Ord Gi*），属性字段是PM2.5浓度，用距离权重。",
+      "expected_output": "Constructs distance-based spatial weights, computes Gi* statistics, classifies hot spots (99%, 95%, 90% confidence) and cold spots, outputs result shapefile with cluster labels.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "I have a shapefile of administrative boundaries and a raster of land use classification. I need to calculate the area of each land use type within each administrative unit.",
+      "expected_output": "Performs zonal statistics using rasterio and geopandas, handles CRS alignment, computes area per class per zone, outputs a summary table and optionally a joined shapefile.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "用克里金插值方法把站点降水数据插值到1km栅格上，需要先做变异函数拟合。",
+      "expected_output": "Fits an experimental variogram, selects theoretical model (spherical/exponential/Gaussian), performs ordinary Kriging, outputs interpolated raster with uncertainty map, includes cross-validation metrics.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "对两期土地利用分类数据做变化检测，输出转移矩阵和变化区域图。",
+      "expected_output": "Performs post-classification comparison, generates a land use transition matrix, identifies changed pixels, outputs change map and summary statistics table.",
+      "files": []
+    }
+  ]
+}
