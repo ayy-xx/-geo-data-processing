@@ -26,6 +26,9 @@ When the user writes in Chinese or uses Chinese GIS terminology:
 
 - Accept Chinese input naturally. Produce Python code with English variable names and function names.
 - Preserve Chinese explanations in comments and bilingual output sections.
+- For Chinese-facing projects, write code with English variables/functions and add a Chinese comment on every executable line unless the user relaxes this requirement.
+- Use Chinese names for output tables, figure titles, legends, field names, folders, and method documents when the user is writing a Chinese thesis/report.
+- After generating or modifying code, run a code review pass before treating the work as complete. Check paths, units, nodata handling, masks, resampling choices, aggregation scale, and output names.
 - Map Chinese GIS terms to English library concepts using the table below. For the full mapping,
   open `references/chinese-author-alignment.md`.
 
@@ -45,6 +48,27 @@ When the user writes in Chinese or uses Chinese GIS terminology:
 | 分辨率对齐 | Resolution alignment | resample all inputs to a common grid |
 
 ## Workflow
+
+### Step -1: Organize the project
+
+For multi-step geospatial projects, establish a stable structure before heavy processing:
+
+```text
+project/
+├── 代码/
+├── 数据结果/
+├── 图表/
+├── 说明文档/
+└── 质量检查/
+```
+
+Rules learned from large raster projects:
+
+- Put scripts in `代码/`. In Chinese-facing projects, every generated script line should have a Chinese comment.
+- Put computed data in `数据结果/`. Every major result folder must contain a nearby `数据说明.md` that explains data sources, processing steps, formulas, units, fields, and one small calculation example when useful.
+- Put figures in `图表/`, narrative method/result notes in `说明文档/`, and validation tables/logs in `质量检查/`.
+- If outputs become messy, do not immediately rerun everything. First archive or copy the latest trusted outputs into a clean directory and write a directory explanation.
+- Important stages may use independent repositories or result packages, but the final thesis/report delivery should have one consolidated directory.
 
 ### Step 0: Confirm folders
 
@@ -113,6 +137,17 @@ Classify analysis type into one or more domains:
 If the task spans multiple domains, plan the pipeline order: I/O and CRS alignment first,
 then analysis, then validation.
 
+For raster calculations, ask the user what analytical scale they need when it is unclear:
+
+- pixel/cell scale (`逐像元`)
+- month scale (`月尺度`)
+- annual scale (`年尺度`)
+- multi-year mean (`多年平均`)
+- cumulative change (`累计变化`)
+- regional or category summary (`分区/类型汇总`)
+
+Default to pixel-first processing, then aggregate by region, category, year, or month. Avoid computing regional means first and then using those means for mechanism analysis unless the user explicitly requests a regional-average model.
+
 ### Step 2: Inspect data and environment
 
 For each input file, check:
@@ -123,6 +158,13 @@ For each input file, check:
 - Spatial extent / bounding box
 - Nodata value and encoding
 - Value range (raster) or attribute columns (vector)
+
+For multi-year or monthly raster series, also check:
+
+- Expected years and months are complete.
+- File naming can be parsed reliably into year/month/factor.
+- All rasters share compatible CRS, transform, shape, resolution, nodata, and valid masks.
+- The relationship between month-scale, annual-scale, multi-year mean, and cumulative outputs is stated before calculation.
 
 Use `scripts/geo_data_io.py` for automated inspection.
 
@@ -163,20 +205,30 @@ Break the analysis into reproducible steps. For each step, note:
 1. Report the resolution of each input file.
 2. Ask the user: "这些栅格数据分辨率不一致，是否需要统一重采样？"
 3. If yes, ask: "以哪个数据为基准？或是否上传新的基准数据？"
-4. Resample all other inputs to match the reference resolution and extent using bilinear
-   (continuous data) or nearest-neighbor (categorical data) resampling.
+4. Resample all other inputs to match the reference resolution and extent using nearest-neighbor
+   for categorical rasters (land use, vegetation type, administrative/zone masks) and bilinear
+   for continuous rasters (temperature, precipitation, PET, NDVI-like indices, elevation).
 5. Use `scripts/crs_utils.py` for the resampling operation.
+
+For unit-sensitive raster analysis:
+
+- Use intensity/depth units such as `mm`, `℃`, and index values as the main analysis units for continuous variables.
+- Treat volume, total water amount, and area-weighted totals as supplementary tables or management interpretation unless the user explicitly chooses them as the main metric.
+- Do not combine different units directly in one score. Standardize indicators to unitless scores before weighted ranking.
 
 ### Step 5: Generate and execute code
 
 Write Python scripts following the patterns in `scripts/`. Rules:
 
 - Use `pathlib.Path` for all paths — never hardcode OS-specific separators.
+- For Chinese-facing projects, use English variable/function names and add Chinese comments to every executable line.
 - Handle nodata explicitly at every step: check for nodata, propagate correctly, set output nodata.
 - Include progress reporting for batch operations (print percentage or use `tqdm`).
 - Write intermediate results to the output folder when the pipeline has more than 3 steps.
 - Use context managers (`with` statements) for all rasterio/gdal dataset handles.
 - For large rasters that may not fit in memory, use windowed reading (`rasterio.windows`).
+- Write `数据说明.md` next to each major data output folder, including source files, formulas, units, field definitions, processing scale, and a small example when the formula is not obvious.
+- After code generation, review the code before running or finalizing it. Confirm the script follows the selected scale, uses the right resampling method, preserves masks, writes Chinese output names when required, and keeps units consistent.
 
 ### Step 6: Validate results
 
@@ -188,6 +240,9 @@ Use `references/qa-checklist.md` for the validation checklist:
 - Value ranges are sane (e.g., NDVI in [-1, 1], classification codes are integers)
 - Nodata is handled correctly (no nodata values leaking into data range)
 - For statistical outputs: p-values, confidence intervals, effect sizes are reported
+- Effective pixel counts are explained, especially when they differ from a classification mask or land-use mask.
+- Scale and unit checks are explicit: pixel maxima, regional means, whole-area means, and cumulative sums are not compared as if they were the same quantity.
+- For conservation/decomposition analyses, include residual or closure checks where applicable.
 
 Generate summary statistics and optional visualization (histogram, quick map) for validation.
 
